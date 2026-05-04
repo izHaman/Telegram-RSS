@@ -1,0 +1,63 @@
+name: Smart Content-Only Sync
+on:
+  schedule:
+    - cron: '*/5 * * * *' 
+  workflow_dispatch:
+
+jobs:
+  fetch-feeds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch channels
+        run: |
+          CHANNELS=(
+            "mamlekate" "ircfspace" "vahidonline" "iranintltv" 
+            "persian_rockstar" "hatricktv" "charsouvpn" "iholymaryat70" 
+            "jadivarlog" "digitechirchannel" "whynationsfail2019" 
+            "khateraaat" "realxsnake" "soratvpnshop" "dw_farsi"
+          )
+          
+          BASE_URL="https://rsshub.rssforever.com/telegram/channel"
+          mkdir -p feeds
+          
+          for slug in "${CHANNELS[@]}"; do
+            echo "Checking: $slug"
+            # Download to a temporary file
+            curl -L -s "$BASE_URL/$slug" -o "feeds/$slug.xml.tmp"
+            
+            # If the original file doesn't exist, move the tmp to it
+            if [ ! -f "feeds/$slug.xml" ]; then
+              mv "feeds/$slug.xml.tmp" "feeds/$slug.xml"
+            else
+              # Compare ignoring dates and build IDs
+              # We strip common dynamic RSS tags before comparing
+              diff -I '<lastBuildDate>' -I '<pubDate>' -I '<updated>' "feeds/$slug.xml" "feeds/$slug.xml.tmp" > /dev/null
+              
+              if [ $? -ne 0 ]; then
+                echo "New content detected for $slug"
+                mv "feeds/$slug.xml.tmp" "feeds/$slug.xml"
+              else
+                echo "No real changes for $slug"
+                rm "feeds/$slug.xml.tmp"
+              fi
+            fi
+            sleep 1
+          done
+
+      - name: Deploy to GitHub
+        run: |
+          git config --global user.name "Content-Monitor"
+          git config --global user.email "bot@github.com"
+          git add feeds/*.xml
+          
+          # Final check if any tracked files actually changed
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "New content found: $(date +'%Y-%m-%d %H:%M')"
+            git push
+          else
+            echo "Everything is up to date."
+          fi
+          
