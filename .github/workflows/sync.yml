@@ -1,18 +1,17 @@
-
-name: Smart Content-Only Sync
+name: Rotating Feed Sync
 on:
   schedule:
-    - cron: '0 */2 * * *'  # هر ۲ ساعت یک بار
+    - cron: '*/5 * * * *'  # every 5 minutes
   workflow_dispatch:
 
 jobs:
-  fetch-feeds:
+  fetch-one:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Fetch channels
+      - name: Fetch one channel
         run: |
           chmod +x fetch-feeds.sh
           ./fetch-feeds.sh
