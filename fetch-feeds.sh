@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# --- 1. State Persistence (Round-robin logic) ---
+# --- 1. State Persistence ---
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
 INDEX=$(grep -oP '"index": \K[0-9]+' state.json)
 
@@ -15,12 +15,12 @@ TOTAL=${#CHANNELS[@]}
 SLUG="${CHANNELS[$INDEX]}"
 NEXT_INDEX=$(( (INDEX + 1) % TOTAL ))
 
-echo "[$(($INDEX + 1))/$TOTAL] Syncing: $SLUG"
+echo "[$(($INDEX + 1))/$TOTAL] Fetching: $SLUG"
 
 # --- 2. Environment Setup ---
 mkdir -p feeds/images
 
-# --- 3. Remote Fetch ---
+# --- 3. Content Fetching ---
 BASE_URL="https://rsshub.rssforever.com/telegram/channel"
 TMP_FILE="feeds/$SLUG.xml.tmp"
 
@@ -28,13 +28,11 @@ HTTP_CODE=$(curl -L -s -o "$TMP_FILE" -w "%{http_code}" \
   "$BASE_URL/$SLUG" --max-time 60 --connect-timeout 15 2>/dev/null || echo "000")
 
 if [[ "$HTTP_CODE" != "200" ]] || [[ ! -s "$TMP_FILE" ]]; then
-  echo "  ! Fetch failed (HTTP $HTTP_CODE). Aborting."
+  echo "  ! Request failed (HTTP $HTTP_CODE). skipping."
   rm -f "$TMP_FILE"
 else
-  # --- 4. Media Mirroring (GitHub CDN Proxy) ---
-  echo "  > Mirroring media to local storage..."
-  
-  # Extract and download unique Telegram media links
+  # --- 4. Image Mirroring ---
+  echo "  > Syncing media assets..."
   grep -oP 'https://(cdn[0-9]*\.telesco\.pe|telesco\.pe)/file/[^"<\s]*' "$TMP_FILE" | sort -u | while read -r img_url; do
       hash_name=$(echo -n "$img_url" | md5sum | cut -d' ' -f1).jpg
       local_path="feeds/images/$hash_name"
@@ -43,41 +41,44 @@ else
           curl -s -L --max-filesize 5M -o "$local_path" "$img_url" --max-time 15
       fi
       
-      # Rewrite URLs to point to GitHub Raw CDN
+      # Rewrite to local GitHub CDN
       CDN_URL="https://raw.githubusercontent.com/izHaman/Telegram-SSR/main/feeds/images/$hash_name"
       sed -i "s|$img_url|$CDN_URL|g" "$TMP_FILE"
   done
 
-  # --- 5. Atomic Update (Content-aware diff) ---
+  # --- 5. Media Optimization (Python Bridge) ---
+  if [[ -d "feeds/images" ]]; then
+    python3 optimizer.py
+  fi
+
+  # --- 6. Content Integrity Check ---
   if [[ -f "feeds/$SLUG.xml" ]]; then
-    # Ignore volatile metadata like build dates to prevent redundant commits
     if diff -I '<lastBuildDate>' -I '<pubDate>' -I '<updated>' "feeds/$SLUG.xml" "$TMP_FILE" > /dev/null; then
-      echo "  = No significant changes. Skipping."
+      echo "  = Content identical. No update."
       rm "$TMP_FILE"
     else
       mv "$TMP_FILE" "feeds/$SLUG.xml"
-      echo "  + Feed updated."
+      echo "  + Updated: feeds/$SLUG.xml"
     fi
   else
     mv "$TMP_FILE" "feeds/$SLUG.xml"
   fi
 fi
 
-# --- 6. Quota Management (Retention policy) ---
-# Keep only the last 72 hours of media to stay within repo size limits
+# --- 7. Maintenance & Cleanup ---
 find feeds/images -name "*.jpg" -mtime +3 -exec rm {} \;
-
-# --- 7. Persistence and VCS Push ---
 echo "{\"index\": $NEXT_INDEX}" > state.json
 
+# --- 8. VCS Deployment ---
 git config --global user.name "gh-actions-bot"
 git config --global user.email "actions@github.com"
 git add feeds/*.xml feeds/images/*.jpg state.json
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  git commit -m "chore: sync $SLUG @ $(date -u +'%Y-%m-%d %H:%M') UTC"
+  git commit -m "chore: sync $SLUG and optimize assets"
   git push
-  echo "  # Changes pushed to origin."
+  echo "  # Commit pushed."
 else
-  echo "  # Workspace clean."
+  echo "  # No changes to commit."
 fi
+
