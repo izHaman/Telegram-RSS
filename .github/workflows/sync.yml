@@ -11,8 +11,78 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Make script executable
-        run: chmod +x fetch-feeds.sh
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Run feed fetcher
-        run: ./fetch-feeds.sh
+      - name: Fetch channels (bash)
+        run: |
+          CHANNELS=(
+            "mamlekate" "ircfspace" "vahidonline" "iranintltv"
+            "persian_rockstar" "hatricktv" "charsouvpn" "iholymaryat70"
+            "jadivarlog" "digitechirchannel" "whynationsfail2019"
+            "khateraaat" "realxsnake" "soratvpnshop" "dw_farsi"
+          )
+          
+          BASE_URL="https://rsshub.rssforever.com/telegram/channel"
+          mkdir -p feeds
+          
+          TOTAL=${#CHANNELS[@]}
+          COUNTER=0
+          
+          for slug in "${CHANNELS[@]}"; do
+            COUNTER=$((COUNTER+1))
+            echo "[$COUNTER/$TOTAL] Checking: $slug"
+            
+            HTTP_CODE=$(curl -L -s -o "feeds/$slug.xml.tmp" -w "%{http_code}" \
+              "$BASE_URL/$slug" --max-time 30 --connect-timeout 10 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "  HTTP $HTTP_CODE - skipping"
+              rm -f "feeds/$slug.xml.tmp"
+              continue
+            fi
+            
+            if [ ! -s "feeds/$slug.xml.tmp" ] || ! grep -q "<?xml" "feeds/$slug.xml.tmp" 2>/dev/null; then
+              echo "  Invalid or empty XML - skipping"
+              rm -f "feeds/$slug.xml.tmp"
+              continue
+            fi
+            
+            if [ ! -f "feeds/$slug.xml" ]; then
+              echo "  First time creating feed"
+              mv "feeds/$slug.xml.tmp" "feeds/$slug.xml"
+              continue
+            fi
+            
+            if diff -I '<lastBuildDate>' -I '<pubDate>' -I '<updated>' -I '<guid>' \
+              "feeds/$slug.xml" "feeds/$slug.xml.tmp" > /dev/null 2>&1; then
+              echo "  No real changes"
+              rm -f "feeds/$slug.xml.tmp"
+            else
+              echo "  New content detected"
+              mv "feeds/$slug.xml.tmp" "feeds/$slug.xml"
+            fi
+            
+            sleep 2
+          done
+          
+          echo "✅ Finished checking $TOTAL channels"
+
+      - name: Show feed status
+        run: python feed_status.py
+
+      - name: Deploy to GitHub
+        run: |
+          git config --global user.name "Content-Monitor"
+          git config --global user.email "bot@github.com"
+          git add feeds/*.xml
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Update feeds: $(date +'%Y-%m-%d %H:%M')"
+            git push
+            echo "Committed and pushed changes."
+          else
+            echo "No changes to commit."
+          fi
