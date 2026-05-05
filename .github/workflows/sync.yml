@@ -1,4 +1,4 @@
-name: Smart Telegram Content-Reader
+name: Remote Feed Sync
 
 on:
   schedule:
@@ -29,5 +29,5 @@ jobs:
 
       - name: Execute Sync
         run: |
-          chmod +x fatch-feeds.sh
-          ./fatch-feeds.sh
+          chmod +x Fetch-feeds.sh
+          ./Fetch-feeds.sh
