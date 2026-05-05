@@ -9,5 +9,5 @@ Automated RSS Feed Generator for Telegram Channels using GitHub Actions.
 > - Paste to a feed reader like Feedly, Feeder, Inoreader, etc.
 
 ### Notes
-> - در شرایط فعلی ایران کار میکند.
-> - به دلیل محدودیت های RSShub ممکنه فید ها با تأخیر آپدیت بشن.
+> - It works in Iran's current situation.
+> - Due to RSSHub limitations, feeds may be delayed in updating.
