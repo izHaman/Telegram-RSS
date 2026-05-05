@@ -29,5 +29,5 @@ jobs:
 
       - name: Execute Sync
         run: |
-          chmod +x Fetch-feeds.sh
-          ./Fetch-feeds.sh
+          chmod +x fetch-feeds.sh
+          ./fetch-feeds.sh
