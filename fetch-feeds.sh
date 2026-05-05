@@ -1,0 +1,64 @@
+#!/bin/bash
+
+CHANNELS=(
+  "mamlekate" "ircfspace" "vahidonline" "iranintltv"
+  "persian_rockstar" "hatricktv" "charsouvpn" "iholymaryat70"
+  "jadivarlog" "digitechirchannel" "whynationsfail2019"
+  "khateraaat" "realxsnake" "soratvpnshop" "dw_farsi"
+)
+
+BASE_URL="https://rsshub.rssforever.com/telegram/channel"
+mkdir -p feeds
+
+for slug in "${CHANNELS[@]}"; do
+  echo "Checking: $slug"
+
+  # Download with HTTP status code and timeout
+  HTTP_CODE=$(curl -L -s -o "feeds/$slug.xml.tmp" -w "%{http_code}" \
+    "$BASE_URL/$slug" --max-time 30 --connect-timeout 10 2>/dev/null || echo "000")
+
+  if [ "$HTTP_CODE" != "200" ]; then
+    echo "  HTTP $HTTP_CODE for $slug - skipping"
+    rm -f "feeds/$slug.xml.tmp"
+    continue
+  fi
+
+  # Validate non-empty and XML content
+  if [ ! -s "feeds/$slug.xml.tmp" ] || ! grep -q "<?xml" "feeds/$slug.xml.tmp" 2>/dev/null; then
+    echo "  Invalid or empty XML for $slug - skipping"
+    rm -f "feeds/$slug.xml.tmp"
+    continue
+  fi
+
+  # First time fetch
+  if [ ! -f "feeds/$slug.xml" ]; then
+    echo "  First time creating feed for $slug"
+    mv "feeds/$slug.xml.tmp" "feeds/$slug.xml"
+    continue
+  fi
+
+  # Compare ignoring dynamic tags
+  if diff -I '<lastBuildDate>' -I '<pubDate>' -I '<updated>' -I '<guid>' \
+    "feeds/$slug.xml" "feeds/$slug.xml.tmp" > /dev/null 2>&1; then
+    echo "  No real changes for $slug"
+    rm -f "feeds/$slug.xml.tmp"
+  else
+    echo "  New content detected for $slug"
+    mv "feeds/$slug.xml.tmp" "feeds/$slug.xml"
+  fi
+
+  sleep 2
+done
+
+# Git operations (assuming we are already in the repo)
+git config --global user.name "Content-Monitor"
+git config --global user.email "bot@github.com"
+git add feeds/*.xml
+
+if [ -n "$(git status --porcelain)" ]; then
+  git commit -m "Update feeds: $(date +'%Y-%m-%d %H:%M')"
+  git push
+  echo "Committed and pushed changes."
+else
+  echo "No changes to commit."
+fi
