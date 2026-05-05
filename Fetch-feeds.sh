@@ -3,7 +3,7 @@
 # =================================================================
 # Project: Smart Telegram Content-Reader
 # Description: Advanced RSS Proxy & Image Optimizer for Telegram
-# Author: Gemini AI Collaboration
+# Author: izHaman
 # =================================================================
 
 # --- 1. Round-robin Persistence Logic ---
