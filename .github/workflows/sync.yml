@@ -1,16 +1,15 @@
-name: Remote Feed Sync
+name: Smart Telegram Content-Reader
 
 on:
   schedule:
-    - cron: '*/4 * * * *' # Executes every 4 minutes
-  workflow_dispatch: # Allows manual triggering from the Actions tab
+    - cron: '*/4 * * * *' # Scheduled every 4 minutes
+  workflow_dispatch: # Manual trigger support
 
 jobs:
   sync-job:
-    name: Fetch and Mirror Feeds
+    name: Sync and Optimize
     runs-on: ubuntu-latest
     
-    # Ensuring the bot has write access to push changes back to the repo
     permissions:
       contents: write
 
@@ -18,9 +17,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # Shallow clone for faster execution
+          fetch-depth: 1
 
-      - name: Execute Sync Script
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: pip install Pillow
+
+      - name: Execute Sync
         run: |
           chmod +x fatch-feeds.sh
           ./fatch-feeds.sh
