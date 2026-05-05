@@ -1,9 +1,9 @@
-name: Remote Feed Sync
+name: Smart Telegram Content-Reader
 
 on:
   schedule:
-    - cron: '*/4 * * * *' # Scheduled every 4 minutes
-  workflow_dispatch: # Manual trigger support
+    - cron: '*/4 * * * *'
+  workflow_dispatch:
 
 jobs:
   sync-job:
@@ -20,14 +20,17 @@ jobs:
           fetch-depth: 1
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+          cache: 'pip'
 
       - name: Install Dependencies
-        run: pip install Pillow
-
-      - name: Execute Sync
         run: |
-          chmod +x fetch-feeds.sh
-          ./fetch-feeds.sh
+          python -m pip install --upgrade pip
+          pip install Pillow
+
+      - name: Execute Fetcher
+        run: |
+          chmod +x Fetch-feeds.sh
+          ./Fetch-feeds.sh
