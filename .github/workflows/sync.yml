@@ -1,0 +1,18 @@
+name: Smart Content-Only Sync
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-feeds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Make script executable
+        run: chmod +x fetch-feeds.sh
+
+      - name: Run feed fetcher
+        run: ./fetch-feeds.sh
