@@ -14,7 +14,7 @@ INDEX=$(grep -oP '"index": \K[0-9]+' state.json)
 
 CHANNELS=(
   "mamlekate" "ircfspace" "vahidonline" "iranintltv"
-  "persian_rockstar" "hatricktv" "iholymaryat70"
+  "persian_rockstar" "hatricktv" "drtel"
   "jadivarlog" "digitechirchannel" "whynationsfail2019"
   "khateraaat" "dw_farsi"
 )
