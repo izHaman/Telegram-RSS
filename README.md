@@ -12,8 +12,8 @@
 
 ## 🇮🇷 Farsi Documentation
 
-### معرفی پروژه
-پروژه **STC-Reader** (مخفف Smart Telegram Content-Reader) یک راهکار پیشرفته برای دسترسی به محتوای کانال‌های تلگرامی در قالب RSS است، به‌طوری که تمام محدودیت‌های شبکه‌ای و فیلترینگ رسانه‌ها (تصاویر و ویدیوها) را دور می‌زند. این ابزار با استفاده از **GitHub Actions** و یک معماری هوشمند، محتوا را از پل‌های RSS دریافت کرده و تمام دارایی‌های رسانه‌ای را روی دامنه‌ی اصلی گیت‌هاب آینه‌سازی (Mirror) می‌کند.
+### معرفی STC-Reader
+**STC-Reader** ( Smart Telegram Content-Reader) یک راهکار پیشرفته برای دسترسی به محتوای کانال‌های تلگرامی در قالب RSS است، به‌طوری که تمام محدودیت‌های شبکه‌ای و فیلترینگ رسانه‌ها (تصاویر و ویدیوها) را دور می‌زند. این ابزار با استفاده از **GitHub Actions** و یک معماری هوشمند، محتوا را از پل‌های RSS دریافت کرده و تمام دارایی‌های رسانه‌ای را روی دامنه‌ی اصلی گیت‌هاب آینه‌سازی (Mirror) می‌کند.
 
 ### ویژگی‌های کلیدی
 * **Media Proxying:** جایگزینی خودکار لینک‌های فیلترشده تلگرام با لینک‌های مستقیم دامنه‌ی اصلی گیت‌هاب.
@@ -36,7 +36,7 @@
 
 ## 🇬🇧 English Documentation
 
-### Project Overview
+### Overview
 **STC-Reader** is an automated pipeline designed to bridge Telegram's content to RSS readers while overcoming network censorship and media filtering. By leveraging **GitHub Actions**, it fetches RSS feeds, downloads filtered media assets, and mirrors them directly onto GitHub's main domain for seamless accessibility.
 
 ### Key Features
