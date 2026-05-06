@@ -30,7 +30,7 @@
 
 ### استفاده در فیدخوان (Feeder)
 برای اضافه کردن فیدها به اپلیکیشن خود، از الگوی زیر استفاده کنید:
-`https://github.com/USER_NAME/Telegram-RSS/raw/main/feeds/CHANNEL_NAME.xml`
+`https://github.com/USER_NAME/STC-Reader/raw/main/feeds/CHANNEL_NAME.xml`
 
 ---
 
@@ -62,13 +62,13 @@
 
 ### Usage in RSS Readers
 Add your feeds to any RSS client (like Feeder or Tiny Tiny RSS) using the following URL pattern:
-`https://github.com/[YOUR_USERNAME]/Telegram-RSS/raw/main/feeds/[CHANNEL_ID].xml`
+`https://github.com/[YOUR_USERNAME]/STC-Reader/raw/main/feeds/[CHANNEL_ID].xml`
 
 ---
 
 ## 🛠 Project Structure
 ```text
-Telegram-RSS/
+STC-Reader/
 ├── .github/workflows/
 │   └── sync.yml           # Automation logic & schedule
 ├── feeds/
