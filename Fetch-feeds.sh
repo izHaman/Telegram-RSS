@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# check for state file
+# initialize state
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
 INDEX=$(grep -oP '"index": \K[0-9]+' state.json)
 
-# source list
+# channels to sync
 CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "persian_rockstar" "hatricktv" "iholymaryat70" "jadivarlog" "digitechirchannel" "whynationsfail2019" "khateraaat" "dw_farsi")
 TOTAL=${#CHANNELS[@]}
 CHUNK_SIZE=4 
@@ -16,11 +16,11 @@ for (( i=0; i<$CHUNK_SIZE; i++ )); do
     SLUG="${CHANNELS[$CURR_IDX]}"
     TMP_FILE="feeds/$SLUG.xml.tmp"
     
-    # fetch from bridge
+    # get feed from rsshub
     curl -L -s -o "$TMP_FILE" -A "Mozilla/5.0" "https://rsshub.rssforever.com/telegram/channel/$SLUG" --max-time 60
 
     if [[ -s "$TMP_FILE" ]]; then
-      # find telegram assets
+      # identify telegram media
       urls=$(grep -oP 'https://(cdn[0-9]*\.telesco\.pe|telesco\.pe)/file/[^"<\s?]*' "$TMP_FILE" | sort -u)
       
       for img_url in $urls; do
@@ -28,31 +28,30 @@ for (( i=0; i<$CHUNK_SIZE; i++ )); do
           hash_name=$(echo -n "$clean_url" | md5sum | cut -d' ' -f1).jpg
           local_path="feeds/images/$hash_name"
           
-          # download if missing
+          # download missing assets
           if [[ ! -f "$local_path" ]]; then
               curl -s -L --max-filesize 10M -o "$local_path" "$img_url" --max-time 20
           fi
           
           if [[ -f "$local_path" ]]; then
-              # statically.io handles content-type issues and works better in Iran
-              PROXY_URL="https://p.statically.io/img/github.com/izHaman/STC-Reader/main/feeds/images/$hash_name"
-              sed -i "s|$img_url|$PROXY_URL|g" "$TMP_FILE"
+              # stable github raw link
+              GITHUB_URL="https://raw.githubusercontent.com/izHaman/STC-Reader/main/feeds/images/$hash_name"
+              sed -i "s|$img_url|$GITHUB_URL|g" "$TMP_FILE"
           fi
       done
       mv "$TMP_FILE" "feeds/$SLUG.xml"
     fi
 done
 
-# update rotation
+# rotate index for next run
 NEXT_INDEX=$(( (INDEX + CHUNK_SIZE) % TOTAL ))
 echo "{\"index\": $NEXT_INDEX}" > state.json
 
-# process images and clean up
+# clean up and sync
 python3 optimizer.py
 find feeds/images -name "*.jpg" -mtime +3 -exec rm {} \;
 
-# push updates
 git config --global user.name "Smart-Sync-Bot"
 git config --global user.email "actions@github.com"
 git add .
-git commit -m "sync: updated feeds and media" && git push
+git commit -m "sync: revert to stable media linking" && git push
