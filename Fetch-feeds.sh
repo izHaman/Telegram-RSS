@@ -15,9 +15,11 @@ for (( i=0; i<$CHUNK_SIZE; i++ )); do
     SLUG="${CHANNELS[$CURR_IDX]}"
     TMP_FILE="feeds/$SLUG.xml.tmp"
     
+    # Bypass simple scraping blocks
     curl -L -s -o "$TMP_FILE" -A "Mozilla/5.0" "https://rsshub.rssforever.com/telegram/channel/$SLUG" --max-time 60
 
     if [[ -s "$TMP_FILE" ]]; then
+      # Scrape all image URLs
       urls=$(grep -oP 'https://(cdn[0-9]*\.telesco\.pe|telesco\.pe)/file/[^"<\s?]*' "$TMP_FILE" | sort -u)
       
       for img_url in $urls; do
@@ -25,26 +27,29 @@ for (( i=0; i<$CHUNK_SIZE; i++ )); do
           hash_name=$(echo -n "$clean_url" | md5sum | cut -d' ' -f1).jpg
           local_path="feeds/images/$hash_name"
           
-          [[ ! -f "$local_path" ]] && curl -s -L --max-filesize 10M -o "$local_path" "$img_url" --max-time 20
+          if [[ ! -f "$local_path" ]]; then
+              curl -s -L --max-filesize 10M -o "$local_path" "$img_url" --max-time 20
+          fi
           
           if [[ -f "$local_path" ]]; then
+              # Statically CDN is the "Secret Sauce" here. 
+              # It works in Iran and bypasses the 'nosniff' issue.
               FINAL_URL="https://cdn.statically.io/gh/${REPO_FULL_NAME}/main/feeds/images/$hash_name"
               
-              # First replace the URL globally
               sed -i "s|$img_url|$FINAL_URL|g" "$TMP_FILE"
-              # Then inject as a clean HTML element at the start of each post
-              sed -i "s|<description>|<description><![CDATA[<img src=\"$FINAL_URL\" style=\"width:100%;border-radius:10px;\" /><br/>]]>|g" "$TMP_FILE"
           fi
       done
       mv "$TMP_FILE" "feeds/$SLUG.xml"
     fi
 done
 
-echo "{\"index\": $(( (INDEX + CHUNK_SIZE) % TOTAL ))}" > state.json
+NEXT_INDEX=$(( (INDEX + CHUNK_SIZE) % TOTAL ))
+echo "{\"index\": $NEXT_INDEX}" > state.json
+
 python3 optimizer.py
 find feeds/images -name "*.jpg" -mtime +3 -exec rm {} \;
 
 git config --global user.name "github-actions[bot]"
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
 git add .
-git commit -m "sync: forced image injection for better reader compatibility" && git push
+git commit -m "sync: switch to statically cdn for cross-region reliability" && git push
