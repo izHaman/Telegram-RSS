@@ -32,6 +32,11 @@
 برای اضافه کردن فیدها به اپلیکیشن خود، از الگوی زیر استفاده کنید:
 `https://github.com/USER_NAME/STC-Reader/raw/main/feeds/CHANNEL_NAME.xml`
 
+### نکته
+• به دلیل محدودیت های Rsshub و Github، آپدیت شدن feed ها ممکن است با کمی تأخیر انجام شود.
+
+• تعداد چنل ها مستقیماً روی زمان آپدیت شدن فید ها تاثیر میگذارد (سیستم نوبتی)
+
 ---
 
 ## 🇬🇧 English Documentation
@@ -77,3 +82,7 @@ STC-Reader/
 ├── Fetch-feeds.sh         # Core shell logic & anti-rate-limit
 ├── optimizer.py           # Python image processing engine
 └── state.json             # Persistence for chunked sync
+```
+### Notes
+• Due to RSSHub and GitHub limitations, feed updates may be slightly delayed.
+• The number of channels directly affects the feed update interval (round-robin system).
