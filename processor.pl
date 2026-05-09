@@ -2,44 +2,46 @@
 use strict;
 use warnings;
 
-my $placeholder_url = $ARGV[0] || die "Error: Placeholder URL not provided\n";
+# Retrieve the default fallback image URL
+my $placeholder_url = $ARGV[0] || die "Error: Placeholder URL not specified\n";
 
+# Read the entire XML stream from STDIN
 undef $/;
 my $xml_content = <STDIN>;
 
-$xml_content =~ s/<item>(.*?)<\/item>/
-    my $item_body = $1;
+if (defined $xml_content && $xml_content ne "") {
+    # Parse each item block safely using a clean subroutine
+    $xml_content =~ s/<item>(.*?)<\/item>/process_item($1, $placeholder_url)/gse;
+    print $xml_content;
+}
+
+# Subroutine to safely isolate processing logic per item
+sub process_item {
+    my ($item_body, $placeholder) = @_;
     my $enclosure = "";
     
-    # Did bash inject our github raw link into this post?
-    if ($item_body =~ m{(https:\/\/raw\.githubusercontents?\.com\/[^\/]+\/[^\/]+\/main\/feeds\/images\/([^"<\s\?]+)(?:\?v=\d+)?)[^"<\s]*}) {
-        my $full_url = $1;
-        my $filename = $2;
-        
-        # Extract the true extension built by bash
-        my $ext = "";
-        if ($filename =~ m/\.([a-zA-Z0-9]+)$/) {
-            $ext = lc($1);
-        }
-        
-        # Route to proper MIME type for Feeder player
+    # Check if a GitHub raw media link was injected into this item
+    if ($item_body =~ m{(https:\/\/raw\.githubusercontent\.com\/[^\/]+\/[^\/]+\/main\/feeds\/images\/[a-f0-9]+\.([a-zA-Z0-9]+))}i) {
+        my $url = $1;
+        my $ext = lc($2);
         my $mime = "application/octet-stream";
-        if ($ext =~ m/^(mp4|mkv|avi)$/) { $mime = "video\/mp4"; }
-        elsif ($ext =~ m/^(mp3|m4a|wav)$/) { $mime = "audio\/mpeg"; }
-        elsif ($ext =~ m/^(ogg|oga)$/) { $mime = "audio\/ogg"; }
-        elsif ($ext =~ m/^(jpg|jpeg)$/) { $mime = "image\/jpeg"; }
-        elsif ($ext eq "png") { $mime = "image\/png"; }
-        elsif ($ext eq "gif") { $mime = "image\/gif"; }
-        elsif ($ext eq "webp") { $mime = "image\/webp"; }
         
-        # Readers often ignore length="0", so we spoof a generic valid length
-        $enclosure = "<enclosure url=\"$full_url\" type=\"$mime\" length=\"150000\" \/>";
+        # Determine the accurate MIME type based on file extension
+        if ($ext =~ /^(jpg|jpeg)$/) { $mime = "image/jpeg"; }
+        elsif ($ext eq "png") { $mime = "image/png"; }
+        elsif ($ext eq "gif") { $mime = "image/gif"; }
+        elsif ($ext eq "webp") { $mime = "image/webp"; }
+        elsif ($ext eq "mp4") { $mime = "video/mp4"; }
+        elsif ($ext eq "mkv") { $mime = "video/x-matroska"; }
+        elsif ($ext eq "mp3") { $mime = "audio/mpeg"; }
+        elsif ($ext eq "ogg") { $mime = "audio/ogg"; }
+        elsif ($ext eq "pdf") { $mime = "application/pdf"; }
+        
+        $enclosure = "<enclosure url=\"$url\" type=\"$mime\" length=\"102400\" />";
     } else {
-        # Text-only post gets the default blurred image
-        $enclosure = "<enclosure url=\"$placeholder_url\" type=\"image\/jpeg\" length=\"50000\" \/>";
+        # Fall back to the default image for text-only posts
+        $enclosure = "<enclosure url=\"$placeholder\" type=\"image/jpeg\" length=\"51200\" />";
     }
     
-    "<item>" . $item_body . $enclosure . "<\/item>"
-/gsme;
-
-print $xml_content;
+    return "<item>" . $item_body . $enclosure . "</item>";
+}
