@@ -1,0 +1,2 @@
+This is a default image for text-only messages on Telegram
+You can replace or remove it on your own.
