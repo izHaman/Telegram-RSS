@@ -3,7 +3,7 @@
 # Dynamic repo detection
 REPO_FULL_NAME=$GITHUB_REPOSITORY
 # Path to placeholder image
-PLACEHOLDER_URL="https://raw.githubusercontent.com/${REPO_FULL_NAME}/feeds/images/default_img/text_placeholder.jpg"
+PLACEHOLDER_URL="https://raw.githubusercontent.com/${REPO_FULL_NAME}/main/feeds/images/default_img/text_placeholder.jpg"
 
 # Handle channel rotation state
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
