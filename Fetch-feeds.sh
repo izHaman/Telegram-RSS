@@ -7,7 +7,7 @@ REPO_FULL_NAME=$GITHUB_REPOSITORY
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
 INDEX=$(grep -oP '"index": \K[0-9]+' state.json)
 
-CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "persian_rockstar" "hatricktv" "iholymaryat70" "jadivarlog" "digitechirchannel" "whynationsfail2019" "khateraaat" "dw_farsi")
+CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "drtel" "hatricktv" "iholymaryat70" "jadivarlog" "digitechirchannel" "whynationsfail2019" "khateraaat" "dw_farsi")
 TOTAL=${#CHANNELS[@]}
 CHUNK_SIZE=4 
 
