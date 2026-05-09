@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# Dynamic repo detection
+# Repo config
 REPO_FULL_NAME=$GITHUB_REPOSITORY
-# Path to placeholder image
 PLACEHOLDER_URL="https://raw.githubusercontent.com/${REPO_FULL_NAME}/main/feeds/images/default_img/text_placeholder.jpg"
 
-# Handle channel rotation state
+# Load rotation state
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
 INDEX=$(grep -oP '"index": \K[0-9]+' state.json)
 
-# Updated channel list
+# Channel list
 CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "drtel" "hatricktv" "iholymaryat70" "jadivarlog" "digitechirchannel" "whynationsfail2019" "khateraaat" "dw_farsi")
 TOTAL=${#CHANNELS[@]}
 CHUNK_SIZE=4 
@@ -21,64 +20,89 @@ for (( i=0; i<$CHUNK_SIZE; i++ )); do
     SLUG="${CHANNELS[$CURR_IDX]}"
     TMP_FILE="feeds/$SLUG.xml.tmp"
     
-    # Fetch feed from RSSHub
+    # Grab raw RSS from upstream
     curl -L -s -o "$TMP_FILE" -A "Mozilla/5.0" "https://rsshub.rssforever.com/telegram/channel/$SLUG" --max-time 60
 
     if [[ -s "$TMP_FILE" ]]; then
-        # Create a clean version of the XML
-        NEW_FILE="feeds/$SLUG.xml"
-        
-        # We'll use a temporary file to process each <item> block
-        # Using a perl one-liner for reliable multi-line item processing
-        perl -i -0777 -pe 's/<item>(.*?)<\/item>/
-            my $content = $1;
-            if ($content =~ /https:\/\/(cdn[0-9]*\.telesco\.pe|telesco\.pe)\/file\/([^"<\s?]*)/) {
-                # This item HAS an image, let it be processed later or here
-                $content;
-            } else {
-                # This is a text-only item, inject the placeholder enclosure
-                $content . "<enclosure url=\"'${PLACEHOLDER_URL}'\" type=\"image\/jpeg\" length=\"0\" \/>";
-            }
-            "<item>" . $content . "<\/item>"
-        /gs' "$TMP_FILE"
+        # 1. Pass through Perl processor to ensure text-only items get the placeholder
+        cat "$TMP_FILE" | perl processor.pl "$PLACEHOLDER_URL" > "$TMP_FILE.processed"
+        mv "$TMP_FILE.processed" "$TMP_FILE"
 
-        # Now handle existing Telegram images
+        # 2. Extract ALL media links (images, videos, audio, docs)
         urls=$(grep -oP 'https://(cdn[0-9]*\.telesco\.pe|telesco\.pe)/file/[^"<\s?]*' "$TMP_FILE" | sort -u)
         
-        for img_url in $urls; do
-            clean_url=$(echo "$img_url" | cut -d'?' -f1)
-            hash_name=$(echo -n "$clean_url" | md5sum | cut -d' ' -f1).jpg
+        counter=0
+        
+        for media_url in $urls; do
+            clean_url=$(echo "$media_url" | cut -d'?' -f1)
+            
+            # Dynamically extract extension (e.g., mp4, mp3, jpg)
+            ext="${clean_url##*.}"
+            # Fallback to .bin if no extension is found in the URL
+            [[ "$ext" == "$clean_url" ]] && ext="bin"
+            
+            # Hash the filename but keep the original extension
+            hash_name=$(echo -n "$clean_url" | md5sum | cut -d' ' -f1).${ext}
             local_path="feeds/images/$hash_name"
             
+            # Pull media with a strict 20MB limit
             if [[ ! -f "$local_path" ]]; then
-                curl -s -L --max-filesize 10M -o "$local_path" "$img_url" --max-time 20
+                curl -s -L --max-filesize 20M -o "$local_path" "$media_url" --max-time 40
             fi
             
-            if [[ -f "$local_path" ]]; then
+            # Only proceed if download was successful (and skipped files > 20MB are ignored)
+            if [[ -s "$local_path" ]]; then
+                # Map extensions to proper MIME types for XML enclosures
+                case "${ext,,}" in
+                    mp4|mkv|avi) mime="video/mp4" ;;
+                    mp3|m4a|wav) mime="audio/mpeg" ;;
+                    ogg|oga)     mime="audio/ogg" ;;
+                    jpg|jpeg)    mime="image/jpeg" ;;
+                    png)         mime="image/png" ;;
+                    gif)         mime="image/gif" ;;
+                    pdf)         mime="application/pdf" ;;
+                    *)           mime="application/octet-stream" ;;
+                esac
+
+                # Load balance across mirrors
+                if (( counter % 2 == 0 )); then
+                    DOMAIN="raw.githubusercontent.com"
+                else
+                    DOMAIN="raw.githubusercontents.com"
+                fi
+                ((counter++))
+
                 TIMESTAMP=$(date +%s)
-                RAW_LINK="https://raw.githubusercontent.com/${REPO_FULL_NAME}/main/feeds/images/${hash_name}?v=${TIMESTAMP}"
+                RAW_LINK="https://${DOMAIN}/${REPO_FULL_NAME}/main/feeds/images/${hash_name}?v=${TIMESTAMP}"
                 FILE_SIZE=$(stat -c%s "$local_path")
                 
-                # Replace URL in body and add enclosure
-                sed -i "s|$img_url|$RAW_LINK|g" "$TMP_FILE"
-                # Add enclosure for these images too (if not already present)
-                sed -i "s|</item>|<enclosure url=\"$RAW_LINK\" type=\"image/jpeg\" length=\"$FILE_SIZE\" /></item>|g" "$TMP_FILE"
+                # Replace the raw URL in the post body
+                sed -i "s|$media_url|$RAW_LINK|g" "$TMP_FILE"
+                
+                # Swap the text-only placeholder enclosure with the actual rich media enclosure
+                sed -i "s|<enclosure url=\"$PLACEHOLDER_URL\" type=\"image/jpeg\" length=\"0\" />|<enclosure url=\"$RAW_LINK\" type=\"$mime\" length=\"$FILE_SIZE\" />|g" "$TMP_FILE"
+            else
+                # Clean up empty files if curl failed or hit the 20MB limit
+                [[ -f "$local_path" ]] && rm -f "$local_path"
             fi
         done
-        mv "$TMP_FILE" "$NEW_FILE"
+        mv "$TMP_FILE" "feeds/$SLUG.xml"
     fi
 done
 
-# Update rotation index
+# Shift rotation index
 NEXT_INDEX=$(( (INDEX + CHUNK_SIZE) % TOTAL ))
 echo "{\"index\": $NEXT_INDEX}" > state.json
 
-# Cleanup and push
+# Optional: Run custom optimizations
 [[ -f "optimizer.py" ]] && python3 optimizer.py
-# Clean only the cached images, NOT the default_img folder
-find feeds/images -maxdepth 1 -name "*.jpg" -mtime +3 -exec rm {} \;
 
+# Aggressive cleanup: Nuke any media older than exactly 48 hours (2880 mins)
+# -maxdepth 1 prevents it from deleting your placeholder in /default_img/
+find feeds/images -maxdepth 1 -type f -mmin +2880 -exec rm -f {} \;
+
+# Push artifacts to upstream
 git config --global user.name "github-actions[bot]"
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
 git add .
-git commit -m "sync: enhance feeds with text-only placeholders" && git push
+git commit -m "sync: fetch rich media (<20MB) & strict 48h purge" && git push
