@@ -2,14 +2,14 @@
 
 # Dynamic repo detection
 REPO_FULL_NAME=$GITHUB_REPOSITORY
-# Path to your custom placeholder image
-PLACEHOLDER_URL="https://raw.githubusercontent.com/${REPO_FULL_NAME}/main/feeds/images/default_img/text_placeholder.jpg"
+# Path to placeholder image
+PLACEHOLDER_URL="https://raw.githubusercontent.com/${REPO_FULL_NAME}/feeds/images/default_img/text_placeholder.jpg"
 
 # Handle channel rotation state
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
 INDEX=$(grep -oP '"index": \K[0-9]+' state.json)
 
-# Updated channel list (drtel included)
+# Updated channel list
 CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "drtel" "hatricktv" "iholymaryat70" "jadivarlog" "digitechirchannel" "whynationsfail2019" "khateraaat" "dw_farsi")
 TOTAL=${#CHANNELS[@]}
 CHUNK_SIZE=4 
