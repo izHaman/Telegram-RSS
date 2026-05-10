@@ -2,7 +2,7 @@ name: Smart Telegram Content-Reader
 
 on:
   schedule:
-    - cron: '*/4 * * * *'
+    - cron: '*/15 * * * *' # Recommended: Every 15 mins to avoid GitHub Actions rate limits
   workflow_dispatch:
 
 jobs:
@@ -22,15 +22,20 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
           cache: 'pip'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install Pillow
+          pip install telethon Pillow
 
-      - name: Execute Fetcher
+      - name: Execute Sync Pipeline
+        env:
+          # Injected from Settings -> Secrets and Variables -> Actions
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
         run: |
           chmod +x Fetch-feeds.sh
           ./Fetch-feeds.sh
