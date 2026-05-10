@@ -2,8 +2,10 @@
 use strict;
 use warnings;
 
-# Initialize the fallback placeholder URL
-my $placeholder_url = $ARGV[0] || die "Critical Error: Missing placeholder URL argument\n";
+# Professional Media Processor for STC-Reader
+# Handles Images, Videos (MP4), and GIFs with high compatibility for RSS Readers like Feeder.
+
+my $placeholder_url = $ARGV[0] || die "Missing placeholder URL\n";
 
 undef $/;
 my $xml_content = <STDIN>;
@@ -16,12 +18,13 @@ if (defined $xml_content && $xml_content ne "") {
 sub process_item {
     my ($item_body, $placeholder) = @_;
     
-    # Strip existing enclosure tags to rewrite them professionally
+    # Remove existing enclosures to prevent duplicates
     $item_body =~ s/<enclosure[^>]*>//gi;
     
     my $enclosure = "";
+    my $media_html = "";
     
-    # Check for localized GitHub media links
+    # Regex to detect localized GitHub media links
     if ($item_body =~ m{(https://raw\.githubusercontent\.com/[^\s"<]+/feeds/media/([a-f0-9]+\.([a-zA-Z0-9]+))(?:\?[^"\s<]*)?)}i) {
         my $url = $1;
         my $ext = lc($3);
@@ -41,30 +44,37 @@ sub process_item {
         my $mime = $mime_types{$ext} || "application/octet-stream";
         
         if ($mime =~ /^video/) {
-            # 1. Standard Enclosure for the system
+            # Standard enclosure for mobile OS integration
             $enclosure = "<enclosure url=\"$url\" type=\"$mime\" length=\"10485760\" />";
             
-            # 2. Injecting HTML5 Video Player into Description for Feeder compatibility
-            # We use a standard video tag that most modern RSS readers support
-            my $video_html = <<EOF;
-<video controls preload="metadata" style="width:100%; max-height:400px; background:#000; border-radius:8px;">
-    <source src="$url" type="$mime">
-    Your browser does not support the video tag. <a href="$url">Download Link</a>
-</video>
-<br/>
+            # Professional HTML5 Player with fallback link
+            # 'playsinline' and 'muted' are critical for mobile RSS readers
+            $media_html = <<EOF;
+<div style="margin-bottom:15px; background:#000; border-radius:10px; overflow:hidden;">
+    <video controls playsinline muted preload="metadata" style="width:100%; display:block;">
+        <source src="$url" type="$mime">
+        Your app does not support embedded video.
+    </video>
+    <div style="padding:10px; background:#1a1a1a; text-align:center;">
+        <a href="$url" style="color:#00ffcc; text-decoration:none; font-family:sans-serif; font-size:14px; font-weight:bold;">
+            ▶️ Play / Download Video
+        </a>
+    </div>
+</div>
 EOF
-            $item_body =~ s/<description>\s*<!\[CDATA\[/<description><![CDATA[$video_html/;
-            
         } else {
-            # For images, we just put them at the top
+            # Standard Image handling
             $enclosure = "<enclosure url=\"$url\" type=\"$mime\" length=\"512000\" />";
-            $item_body =~ s/<description>\s*<!\[CDATA\[/<description><![CDATA[<img src="$url" style="width:100%; border-radius:8px; margin-bottom:10px;" \/><br\/>/;
+            $media_html = "<img src=\"$url\" style=\"width:100%; border-radius:10px; margin-bottom:10px; display:block;\" /><br/>";
         }
     } else {
-        # Fallback to Placeholder if no media is found
+        # Fallback to visual placeholder for text-only posts
         $enclosure = "<enclosure url=\"$placeholder\" type=\"image/jpeg\" length=\"51200\" />";
-        $item_body =~ s/<description>\s*<!\[CDATA\[/<description><![CDATA[<img src="$placeholder" style="width:100%; border-radius:8px; margin-bottom:10px;" \/><br\/>/;
+        $media_html = "<img src=\"$placeholder\" style=\"width:100%; border-radius:10px; margin-bottom:10px; display:block;\" /><br/>";
     }
+    
+    # Inject the media HTML at the very beginning of the CDATA description
+    $item_body =~ s/<description>\s*<!\[CDATA\[/<description><![CDATA[$media_html/;
     
     return "<item>" . $item_body . $enclosure . "</item>";
 }
