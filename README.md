@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/your-repo/main/feeds/media/default_img/text_placeholder.jpg" alt="Banner" width="100%" style="border-radius:12px" />
-
 <h1>📡 Smart Telegram Content-Reader</h1>
 
 <p><em>A fully automated GitHub Actions pipeline that mirrors Telegram channels to permanent, censorship-resistant RSS feeds — accessible without a VPN from anywhere in the world.</em></p>
@@ -10,7 +8,7 @@
 
 ### 🌐 Language / زبان
 
-[![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge&logo=github)](#) &nbsp;&nbsp; [![فارسی](https://img.shields.io/badge/README-فارسی-green?style=for-the-badge&logo=github)](./README_Fa.md)
+[![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge&logo=github)](#) &nbsp;&nbsp; [![Farsi](https://img.shields.io/badge/README-Farsi-green?style=for-the-badge&logo=github)](./README_Fa.md)
 
 ---
 
