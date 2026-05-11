@@ -8,7 +8,7 @@
 
 ### 🌐 Language / زبان
 
-[![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge&logo=github)](./README.md) &nbsp;&nbsp; [![فارسی](https://img.shields.io/badge/README-فارسی-green?style=for-the-badge&logo=github)](#)
+[![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge&logo=github)](./README.md) &nbsp;&nbsp; [![Farsi](https://img.shields.io/badge/README-Farsi-green?style=for-the-badge&logo=github)](#)
 
 ---
 
@@ -314,12 +314,13 @@ khateraaat | dw_farsi
 - یک حساب GitHub با ریپازیتوری (عمومی یا خصوصی)
 - یک حساب تلگرام با اعتبارنامه API از [my.telegram.org](https://my.telegram.org)
 - Python 3.10+ نصب‌شده روی سیستم محلی (فقط برای یک‌بار تولید session)
+- -- **نکته:** اگر به API تلگرام دسترسی ندارید، مراحل ۲ و ۳ را نادیده بگیرید. (در این صورت فقط به عکس و متن ها دسترسی دارید)
 
 ---
 
 ### مرحله ۱ — Fork و Clone
 
-این ریپازیتوری را fork کنید، سپس به‌صورت محلی clone کنید:
+این ریپازیتوری را fork کنید، یا به‌صورت محلی clone کنید:
 
 ```bash
 git clone https://github.com/username-شما/repo-شما.git
@@ -530,6 +531,6 @@ https://raw.githubusercontent.com/username-شما/repo-شما/main/feeds/iranint
 
 <div align="center">
 
-ساخته شده با ❤️ برای دسترسی آزاد به اطلاعات.
+ساخته شده با 🩵 برای دسترسی آزاد به اطلاعات.
 
 </div>
