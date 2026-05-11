@@ -547,6 +547,8 @@ When adding a new channel, ensure it is added to **both** `CHANNELS` lists (in `
 
 <div align="center">
 
-Built with 🩵 for free access to information.
+  
+ 
+Coded with 🩵 for free access to information.
 
 </div>
