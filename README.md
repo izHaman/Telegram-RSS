@@ -321,6 +321,7 @@ And for video/audio/GIF posts, inside `<description><![CDATA[...]]>`:
 - A GitHub account with a repository (public or private)
 - A Telegram account with API credentials from [my.telegram.org](https://my.telegram.org)
 - Python 3.10+ installed locally (only needed for the one-time session generation)
+-    **Note:** if you don't access to Telegram API, ignore 2, 3, 4 Steps. (in this case, you will only have access to the text and images.)
 
 ---
 
@@ -340,7 +341,6 @@ cd your-repo
 1. Go to [my.telegram.org/apps](https://my.telegram.org/apps) and log in with your Telegram account.
 2. Create a new application (name and description can be anything).
 3. Copy your **API ID** (a number) and **API Hash** (a string) — you'll need them in Step 4.
-   **Note:** if you don't access to Telegram API, ignore 2, 3, 4 Steps. (in this case, you will only have access to the text and images.)
 
 ---
 
