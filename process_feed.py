@@ -100,15 +100,25 @@ _DL_HEADERS = {"User-Agent": "Mozilla/5.0", "Referer": "https://t.me/"}
 # ---------------------------------------------------------------------------
 # URL regex
 # ---------------------------------------------------------------------------
-# Matches two categories of media URL found inside RSSHub Telegram feeds:
+# Matches three categories of media URL found inside RSSHub Telegram feeds:
 #   A) Direct file URLs ending with a known media extension
 #   B) Bare telesco.pe video links (no extension in path, always video)
+#   C) Unsplash/external image URLs injected by RSSHub for text-only posts
+#      (e.g. https://source.unsplash.com/...) — these have no file extension
+#      but must be detected so we can strip them and fall through to the
+#      placeholder path instead of leaving a foreign image in the feed.
 _URL_RE = re.compile(
     r"https://[^\s\"<]+"
     r"(?:\.(?:mp4|mkv|mov|webm|mp3|m4a|ogg|jpg|jpeg|png|gif|webp))"
-    r"|https://[^\s\"<]*telesco\.pe/file/[^\"<\s?]*",
+    r"|https://[^\s\"<]*telesco\.pe/file/[^\"<\s?]*"
+    r"|https://(?:source\.unsplash\.com|images\.unsplash\.com)[^\s\"<]*",
     re.IGNORECASE,
 )
+
+# Unsplash domains — URLs matching these are foreign placeholders injected by
+# RSSHub and must be stripped from the feed entirely so our own placeholder
+# image takes over.  We never download or commit these files.
+_UNSPLASH_DOMAINS = {"source.unsplash.com", "images.unsplash.com"}
 
 # ---------------------------------------------------------------------------
 # Bilingual media banner
@@ -330,6 +340,23 @@ def _process_item(body: str, slug: str, raw_base: str,
             continue
         seen.add(raw_url)
 
+        # ── Strip Unsplash foreign placeholders ───────────────────────────────
+        # RSSHub injects Unsplash images for text-only posts.  We remove them
+        # from the body entirely so our own placeholder takes over below.
+        # These URLs are never downloaded or committed.
+        parsed_host = raw_url.split("/")[2] if raw_url.count("/") >= 2 else ""
+        if parsed_host in _UNSPLASH_DOMAINS:
+            # Remove the entire <img> tag that contains this URL, or just the
+            # bare URL if it appears outside an img tag.
+            body = re.sub(
+                rf'<img\b[^>]*\bsrc=["\'][^"\']*{re.escape(parsed_host)}[^"\']*["\'][^>]*/?>',
+                "",
+                body,
+                flags=re.IGNORECASE,
+            )
+            body = body.replace(raw_url, "")
+            continue   # do NOT set best_url — fall through to placeholder
+
         # Normalise: strip query string tokens before extension detection / hashing
         clean = raw_url.split("?")[0].replace("&amp;", "&")
 
@@ -418,51 +445,4 @@ def _process_item(body: str, slug: str, raw_base: str,
     return body.rstrip() + "\n" + suffix + "\n"
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
-def main():
-    """
-    Read raw RSSHub XML from stdin, process every <item>, write to stdout.
-    Positional arguments are enforced strictly — this script is always called
-    by Fetch-feeds.sh in a controlled environment with guaranteed argument order.
-    """
-    if len(sys.argv) != 4:
-        sys.exit("Usage: process_feed.py <slug> <raw_base_url> <placeholder_url>")
-
-    slug, raw_base, placeholder = sys.argv[1], sys.argv[2], sys.argv[3]
-    os.makedirs(MEDIA_DIR, exist_ok=True)
-
-    xml = sys.stdin.read()
-    if not xml:
-        return   # empty input (curl timed out) — write nothing, exit cleanly
-
-    manifest = _load_manifest()
-
-    # ── Namespace injection ───────────────────────────────────────────────────
-    # <media:content> requires the Media RSS namespace on the root <rss> element.
-    # RSSHub does not always include it; we add it when absent.
-    if "xmlns:media=" not in xml:
-        xml = re.sub(
-            r"<rss\b",
-            '<rss xmlns:media="http://search.yahoo.com/mrss/"',
-            xml, count=1,
-        )
-
-    # ── Per-item processing ───────────────────────────────────────────────────
-    # re.DOTALL is required because <item> bodies always span multiple lines.
-    xml = re.sub(
-        r"<item>(.*?)</item>",
-        lambda m: "<item>" + _process_item(
-            m.group(1), slug, raw_base, placeholder, manifest
-        ) + "</item>",
-        xml,
-        flags=re.DOTALL,
-    )
-
-    sys.stdout.write(xml)
-
-
-if __name__ == "__main__":
-    main()
+# ----------------------------------
