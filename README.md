@@ -326,7 +326,7 @@ And for video/audio/GIF posts, inside `<description><![CDATA[...]]>`:
 
 ### Step 1 — Fork & Clone
 
-Fork this repository to your GitHub account, then clone it locally:
+Fork this repository to your GitHub account, or clone it locally:
 
 ```bash
 git clone https://github.com/your-username/your-repo.git
@@ -340,6 +340,7 @@ cd your-repo
 1. Go to [my.telegram.org/apps](https://my.telegram.org/apps) and log in with your Telegram account.
 2. Create a new application (name and description can be anything).
 3. Copy your **API ID** (a number) and **API Hash** (a string) — you'll need them in Step 4.
+   **Note:** if you don't access to Telegram API, ignore 2, 3, 4 Steps. (in this case, you will only have access to the text and images.)
 
 ---
 
