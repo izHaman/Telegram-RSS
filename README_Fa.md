@@ -12,11 +12,11 @@
 
 ---
 
-[![GitHub Actions](https://img.shields.io/badge/خودکار-GitHub%20Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![GitHub Actions](https://img.shields.io/badge/Automated-GitHub%20Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](https://github.com/features/actions)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Telegram MTProto](https://img.shields.io/badge/Telegram-MTProto%20API-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://core.telegram.org/mtproto)
-[![RSSHub](https://img.shields.io/badge/RSSHub-سازگار-FF6600?style=flat-square)](https://rsshub.app/)
-[![License](https://img.shields.io/badge/مجوز-MIT-yellow?style=flat-square)](./LICENSE)
+[![RSSHub](https://img.shields.io/badge/RSSHub-Compatible-FF6600?style=flat-square)](https://rsshub.app/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
 
 </div>
 
