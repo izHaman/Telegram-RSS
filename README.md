@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/your-repo/main/feeds/media/default_img/text_placeholder.jpg" alt="Banner" width="100%" style="border-radius:12px" />
-
 <h1>📡 Smart Telegram Content-Reader</h1>
 
 <p><em>A fully automated GitHub Actions pipeline that mirrors Telegram channels to permanent, censorship-resistant RSS feeds — accessible without a VPN from anywhere in the world.</em></p>
