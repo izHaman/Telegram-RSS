@@ -535,25 +535,6 @@ Tested and optimised for the following RSS readers:
 
 ---
 
-## 📣 Release Description
-
-> **Smart Telegram Content-Reader** is a fully automated, self-hosted GitHub Actions pipeline that converts Telegram public channels into permanent, censorship-resistant RSS feeds.
->
-> It authenticates to Telegram via the official MTProto API (Telethon), pre-downloads all media — images, videos, audio, and GIFs — before ephemeral CDN URLs expire, commits them directly into the repository, and rewrites every feed's XML to serve permanent `raw.githubusercontent.com` links accessible without a VPN from anywhere in the world, including Iran.
->
-> **Key capabilities:**
-> - 🔐 MTProto-based Telegram authentication with zero persistent session files
-> - 📦 Intelligent three-tier media resolution (manifest → local cache → live CDN)
-> - 🔄 Smart channel rotation with state persistence across runs
-> - 📡 Multi-instance RSSHub fallback for high availability
-> - 🖼️ Automatic JPEG optimisation (70% quality, ~50-60% size reduction)
-> - 📰 Full Media RSS enrichment (`<enclosure>` + `<media:content>`)
-> - 🎬 Bilingual (English + Persian) styled media banners in feed descriptions
-> - 🌐 Complete censorship circumvention — all media on raw.githubusercontent.com
-> - 🧹 Automatic stale media pruning to keep repository size under control
-> - 🛡️ Robust error handling — one bad channel never blocks the pipeline
-
----
 
 ## 🤝 Contributing
 
@@ -565,6 +546,6 @@ When adding a new channel, ensure it is added to **both** `CHANNELS` lists (in `
 
 <div align="center">
 
-Built with ❤️ for free access to information.
+Built with 🩵 for free access to information.
 
 </div>
