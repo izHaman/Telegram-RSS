@@ -8,7 +8,7 @@
 
 ### 🌐 Language / زبان
 
-[![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge&logo=github)](./README.md) &nbsp;&nbsp; [![فارسی](https://img.shields.io/badge/README-فارسی-green?style=for-the-badge&logo=github)](#)
+[![English](https://img.shields.io/badge/README-English-blue?style=for-the-badge&logo=github)](./README.md) &nbsp;&nbsp; [![Persian](https://img.shields.io/badge/README-Persian-green?style=for-the-badge&logo=github)](#)
 
 ---
 
