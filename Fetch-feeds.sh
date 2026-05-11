@@ -94,6 +94,14 @@ CHUNK_SIZE=4            # channels fetched per run; adjust to taste (affects fre
 
 mkdir -p feeds/media/default_img   # ensure directory exists before curl writes to it
 
+# Guard: warn clearly if the placeholder image is missing from the repository.
+# Without it, text-only posts will have a broken image URL in their feed card.
+# To fix: commit your image to feeds/media/default_img/text_placeholder.jpg
+if [[ ! -f "feeds/media/default_img/text_placeholder.jpg" ]]; then
+    echo "[warn] feeds/media/default_img/text_placeholder.jpg not found in repo."
+    echo "       Text-only posts will show a broken placeholder until you commit this file."
+fi
+
 echo "Step 2: Fetching RSSHub chunk (index ${INDEX})..."
 
 for (( i=0; i<CHUNK_SIZE; i++ )); do
