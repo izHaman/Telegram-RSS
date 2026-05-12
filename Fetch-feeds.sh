@@ -87,7 +87,7 @@ RSSHUB_INSTANCES=(
 # To add a channel: append its slug here AND add it to the CHANNELS list in bridge.py
 # if you also want MTProto image pre-fetching for it.
 CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "drtel" "hatricktv"
-          "iholymaryat70" "jadivarlog" "digitechirchannel" "whynationsfail2019"
+          "raptv" "jadivarlog" "digitechirchannel" "whynationsfail2019"
           "khateraaat" "dw_farsi")
 TOTAL=${#CHANNELS[@]}   # 12 — used for modulo wrap-around
 CHUNK_SIZE=4            # channels fetched per run; adjust to taste (affects freshness vs. speed)
