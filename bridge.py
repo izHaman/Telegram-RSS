@@ -67,7 +67,7 @@ MAX_FILE_BYTES = 50 * 1024 * 1024   # 50 MB
 # ---------------------------------------------------------------------------
 # Keep this list in sync with CHANNELS in Fetch-feeds.sh.
 # Only channels whose media we want committed to the repo are listed here.
-CHANNELS = ["mamlekate", "ircfspace", "vahidonline", "iranintltv", "dw_farsi", "drtel", "khateraaat", "whynationsfail2019", "jadivarlog", "digitechirchannel", "hatricktv"]
+CHANNELS = ["mamlekate", "ircfspace", "vahidonline", "iranintltv", "dw_farsi", "drtel", "khateraaat", "raptv", "whynationsfail2019", "jadivarlog", "digitechirchannel", "hatricktv"]
 
 # ---------------------------------------------------------------------------
 # File-system paths
