@@ -100,22 +100,13 @@ _DL_HEADERS = {"User-Agent": "Mozilla/5.0", "Referer": "https://t.me/"}
 # ---------------------------------------------------------------------------
 # URL regex
 # ---------------------------------------------------------------------------
-# Matches three categories of media URL found inside RSSHub Telegram feeds:
+# Matches two categories of media URL found inside RSSHub Telegram feeds:
 #   A) Direct file URLs ending with a known media extension
 #   B) Bare telesco.pe video links (no extension in path, always video)
-#   C) Unsplash URLs injected by RSSHub as placeholder images for text-only
-#      posts — detected here so they can be stripped in the processing loop.
 _URL_RE = re.compile(
     r"https://[^\s\"<]+"
     r"(?:\.(?:mp4|mkv|mov|webm|mp3|m4a|ogg|jpg|jpeg|png|gif|webp))"
-    r"|https://[^\s\"<]*telesco\.pe/file/[^\"<\s?]*"
-    r"|https://(?:source|images)\.unsplash\.com[^\s\"<]*",
-    re.IGNORECASE,
-)
-
-# Matches <img> tags containing an Unsplash URL — used to strip them cleanly.
-_UNSPLASH_IMG_RE = re.compile(
-    r"<img[^>]*src=[\"'][^\"']*unsplash\.com[^\"']*[\"'][^>]*/?>",
+    r"|https://[^\s\"<]*telesco\.pe/file/[^\"<\s?]*",
     re.IGNORECASE,
 )
 
@@ -339,19 +330,6 @@ def _process_item(body: str, slug: str, raw_base: str,
             continue
         seen.add(raw_url)
 
-        # ── Strip Unsplash foreign placeholders ───────────────────────────────
-        # RSSHub injects Unsplash images for text-only posts (no file extension).
-        # Remove the wrapping <img> tag and the bare URL from the body so the
-        # post falls through to the local placeholder path below.
-        # Wrapped in try/except so a malformed match never crashes the pipeline.
-        if "unsplash.com" in raw_url.lower():
-            try:
-                body = _UNSPLASH_IMG_RE.sub("", body)
-                body = body.replace(raw_url, "")
-            except Exception as exc:
-                print(f"  [warn] unsplash strip failed: {exc}", file=sys.stderr)
-            continue   # never set best_url — fall through to placeholder
-
         # Normalise: strip query string tokens before extension detection / hashing
         clean = raw_url.split("?")[0].replace("&amp;", "&")
 
@@ -414,7 +392,7 @@ def _process_item(body: str, slug: str, raw_base: str,
             banner = _make_media_banner(best_url, best_ext)
             body = re.sub(
                 r"(<description>\s*<!\[CDATA\[)",
-                lambda m, b=banner: m.group(1) + b,
+                rf"\1{banner}",
                 body,
             )
 
@@ -432,10 +410,8 @@ def _process_item(body: str, slug: str, raw_base: str,
         )
         body = re.sub(
             r"(<description>\s*<!\[CDATA\[)",
-            lambda m, p=placeholder: (
-                m.group(1)
-                + f'<img src="{p}" style="width:100%;border-radius:8px;margin-bottom:10px" /><br/>'
-            ),
+            rf'\1<img src="{placeholder}" '
+            rf'style="width:100%;border-radius:8px;margin-bottom:10px" /><br/>',
             body,
         )
 
