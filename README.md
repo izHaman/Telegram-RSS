@@ -81,7 +81,7 @@ This pipeline eliminates that problem entirely by:
           ┌────────────▼────────────┐
           │  Step 3: process_feed.py│  ← Rewrites all media URLs
           │   Feed Processor/Enrich │  ← Injects enclosure tags
-          │                         │  ← Injects bilingual banners
+          │                         │  ← Injects bilingual links
           └────────────┬────────────┘
                        │
           ┌────────────▼────────────┐
@@ -142,12 +142,6 @@ If all three fail, the original CDN URL is preserved as a last-resort fallback.
 - Injects the `xmlns:media` namespace on the `<rss>` root if RSSHub omitted it.
 - Accurate MIME types for all supported formats (mp4, mkv, mov, webm, mp3, ogg, m4a, jpg, png, gif, webp).
 
-### 🎬 Bilingual Media Banner
-- For every **video, audio, or GIF** post, a styled HTML banner is injected into `<description>`.
-- Renders in any WebView-based RSS reader (Feeder, Reeder, NetNewsWire, etc.).
-- **Bilingual**: English + Persian (`پخش رسانه | Open Media`).
-- Pure inline CSS — no JavaScript, no external requests, dark-gradient design.
-- Entire banner is tappable — no tiny hit targets.
 
 ### 🧹 Automatic Media Pruning
 - Files older than **48 hours** that are **not tracked by git** are automatically deleted.
