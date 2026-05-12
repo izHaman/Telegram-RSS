@@ -135,13 +135,24 @@ for (( i=0; i<CHUNK_SIZE; i++ )); do
         #   • GNU-vs-BSD incompatibilities in regex flags
         #   • Shell-injection when URLs contain &, ?, or % characters
         #   • Line-length limits in sed's in-place mode
-        # The script reads from stdin (< "$TMP_FILE") and writes to stdout
-        # (> "feeds/${SLUG}.xml"), keeping the original .tmp until success.
-        python3 process_feed.py "$SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
-            < "$TMP_FILE" > "feeds/${SLUG}.xml"
-
+        #
+        # ATOMIC WRITE: redirect to a .new temp file first, then mv into place.
+        # Bash's > redirect truncates the destination file immediately on open —
+        # before Python writes a single byte — so if process_feed.py crashes the
+        # existing feed would be wiped to 0 bytes.  Writing to .new and only
+        # moving it over on success (non-zero exit AND non-empty output) prevents
+        # any existing good feed from being destroyed by a transient failure.
+        NEW_FILE="feeds/${SLUG}.xml.new"
+        if python3 process_feed.py "$SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
+               < "$TMP_FILE" > "$NEW_FILE" \
+           && [[ -s "$NEW_FILE" ]]; then
+            mv "$NEW_FILE" "feeds/${SLUG}.xml"
+            echo "  Done: feeds/${SLUG}.xml"
+        else
+            echo "  [warn] process_feed.py failed or produced empty output for @${SLUG} — keeping existing feed."
+            rm -f "$NEW_FILE"
+        fi
         rm -f "$TMP_FILE"
-        echo "  Done: feeds/${SLUG}.xml"
     else
         echo "  [warn] Empty response for @${SLUG}, skipping."
         rm -f "$TMP_FILE"
