@@ -111,43 +111,24 @@ _URL_RE = re.compile(
 )
 
 # ---------------------------------------------------------------------------
-# Bilingual media banner
+# Bilingual media link
 # ---------------------------------------------------------------------------
-# Injected into <description> CDATA for every video, audio, or GIF post.
-# Renders in any WebView-based RSS reader (Feeder, Reeder, NetNewsWire …).
-#
-# Design notes:
-#   • Pure inline CSS — no external stylesheet, no JavaScript, no network
-#     requests from the banner itself.
-#   • Dark gradient background — clearly visible on both light and dark themes.
-#   • Accent colour #e94560 — distinctive, not confused with error/alert red.
-#   • Full block is tappable (display:block on <a>) — no tiny hit target.
-#   • Bilingual: English first for universal recognition, Persian below it
-#     for Iranian readers who may not recognise English immediately.
-#   • {url} and {ext_label} are replaced at call time by _make_media_banner().
-_MEDIA_BANNER_TEMPLATE = """\
-<a href="{url}" style="display:block;text-decoration:none;margin:10px 0;\
-background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:12px;\
-padding:14px 16px;border-left:4px solid #e94560;font-family:sans-serif;">\
-<span style="font-size:26px;vertical-align:middle;">▶</span>\
-<span style="color:#e94560;font-size:15px;font-weight:bold;\
-vertical-align:middle;margin:0 8px;">{ext_label}</span>\
-<span style="color:#eee;font-size:14px;vertical-align:middle;">\
-Open Media &nbsp;|&nbsp; پخش رسانه</span>\
-<br/><span style="color:#aaa;font-size:11px;display:block;margin-top:6px;\
-direction:rtl;text-align:right;">\
-برای پخش ضربه بزنید &nbsp;·&nbsp; Tap to open\
-</span></a>"""
+# A plain-text hyperlink injected into <description> CDATA for every
+# video, audio, or GIF post.  Feeder (and most RSS readers) does NOT render
+# complex inline-CSS blocks inside CDATA, but always renders a bare <a> tag.
+# The «» decorators make the link visually distinct without any CSS.
 
-
-def _make_media_banner(url: str, ext: str) -> str:
+def _make_media_link(url: str, ext: str) -> str:
     """
-    Render the bilingual media banner for a committed GitHub raw URL.
+    Build a simple, universally-renderable hyperlink for non-image media.
 
-    ext_label shows the file format (e.g. "MP4", "MP3", "GIF") in the accent
-    colour so the reader immediately knows the media type before tapping.
+    Format:  ««  Show media | پخش رسانه  [EXT]  »»
+    The link text is plain ASCII + Persian — no CSS, no spans, no JavaScript.
+    Feeder, Reeder, NetNewsWire and virtually every other RSS reader will show
+    this as a tappable underlined link.
     """
-    return _MEDIA_BANNER_TEMPLATE.format(url=url, ext_label=ext.upper())
+    label = f"«« Show media | پخش رسانه [{ext.upper()}] »»"
+    return f'<a href="{url}">{label}</a><br/>'
 
 
 # ---------------------------------------------------------------------------
@@ -379,22 +360,20 @@ def _process_item(body: str, slug: str, raw_base: str,
         # last-resort fallback.  The reader may not load it inside Iran, but
         # the text content of the post is always preserved.
 
-    # ── Inject bilingual banner for non-image media ───────────────────────────
-    # If the best media asset is video, audio, or GIF, inject a styled banner
-    # at the top of the post description so the reader sees a clear, tappable
-    # "Open Media | پخش رسانه" link regardless of whether their RSS reader
-    # supports <media:content> inline playback.
-    if best_url and best_ext and best_ext not in IMAGE_EXTS - {"gif"}:
-        # GIF is in IMAGE_EXTS but deserves a play banner (it is animated).
-        # Static image types (jpg, jpeg, png, webp) do NOT get a banner.
-        is_animated = best_ext in VIDEO_EXTS | AUDIO_EXTS | {"gif"}
-        if is_animated:
-            banner = _make_media_banner(best_url, best_ext)
-            body = re.sub(
-                r"(<description>\s*<!\[CDATA\[)",
-                rf"\1{banner}",
-                body,
-            )
+    # ── Inject bilingual media link for video / audio / GIF posts ────────────
+    # Static images (jpg, jpeg, png, webp) do NOT get a link — the image itself
+    # is already visible in the feed card.
+    # GIF is animated, so it gets a link just like video/audio.
+    # The repl is passed as a callable to re.sub() to prevent backreference
+    # interpretation of special characters in the URL (e.g. \1, &, \g<>).
+    ANIMATED_EXTS = VIDEO_EXTS | AUDIO_EXTS | {"gif"}
+    if best_url and best_ext and best_ext in ANIMATED_EXTS:
+        link = _make_media_link(best_url, best_ext)
+        body = re.sub(
+            r"(<description>\s*<!\[CDATA\[)",
+            lambda m: m.group(1) + link,
+            body,
+        )
 
     # ── Build <enclosure> + <media:content> ──────────────────────────────────
     if best_url and best_ext:
@@ -408,10 +387,13 @@ def _process_item(body: str, slug: str, raw_base: str,
             f"{_enclosure(placeholder, 'jpg')}\n"
             f"{_media_content(placeholder, 'jpg')}"
         )
+        _ph = placeholder  # capture for lambda closure
         body = re.sub(
             r"(<description>\s*<!\[CDATA\[)",
-            rf'\1<img src="{placeholder}" '
-            rf'style="width:100%;border-radius:8px;margin-bottom:10px" /><br/>',
+            lambda m: m.group(1) + (
+                f'<img src="{_ph}" '
+                f'style="width:100%;border-radius:8px;margin-bottom:10px" /><br/>'
+            ),
             body,
         )
 
