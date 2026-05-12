@@ -81,7 +81,7 @@ This pipeline eliminates that problem entirely by:
           ┌────────────▼────────────┐
           │  Step 3: process_feed.py│  ← Rewrites all media URLs
           │   Feed Processor/Enrich │  ← Injects enclosure tags
-          │                         │  ← Injects bilingual links
+          │                         │  ← Injects media links
           └────────────┬────────────┘
                        │
           ┌────────────▼────────────┐
