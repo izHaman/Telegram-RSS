@@ -41,10 +41,6 @@
 
 set -euo pipefail   # -e abort on error  -u treat unset vars as errors  -o pipefail propagate pipe failures
 
-# Trap: print the line number of any unexpected failure so the Actions log
-# shows exactly where the script died, rather than a silent abort.
-trap 'echo "[ERROR] Script aborted at line $LINENO — check the output above for details." >&2' ERR
-
 # ---------------------------------------------------------------------------
 # GitHub raw URL configuration
 # ---------------------------------------------------------------------------
@@ -98,13 +94,6 @@ CHUNK_SIZE=4            # channels fetched per run; adjust to taste (affects fre
 
 mkdir -p feeds/media/default_img   # ensure directory exists before curl writes to it
 
-# Guard: warn clearly if the placeholder image is missing from the repository.
-# Without it, text-only posts will have a broken image URL in their feed card.
-if [[ ! -f "feeds/media/default_img/text_placeholder.jpg" ]]; then
-    echo "[warn] feeds/media/default_img/text_placeholder.jpg not found in repo."
-    echo "       Text-only posts will show a broken placeholder until you commit this file."
-fi
-
 echo "Step 2: Fetching RSSHub chunk (index ${INDEX})..."
 
 for (( i=0; i<CHUNK_SIZE; i++ )); do
@@ -138,23 +127,13 @@ for (( i=0; i<CHUNK_SIZE; i++ )); do
         #   • GNU-vs-BSD incompatibilities in regex flags
         #   • Shell-injection when URLs contain &, ?, or % characters
         #   • Line-length limits in sed's in-place mode
-        #
-        # ATOMIC WRITE: write to .new first, then mv over the real file only on
-        # success.  Bash's > redirect truncates the destination immediately on
-        # open — before Python writes a single byte — so a crash would wipe the
-        # existing feed to 0 bytes.  Writing to .new and mv-ing on success keeps
-        # the previous good feed intact if process_feed.py fails for any reason.
-        NEW_FILE="feeds/${SLUG}.xml.new"
-        if python3 process_feed.py "$SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
-               < "$TMP_FILE" > "$NEW_FILE" \
-           && [[ -s "$NEW_FILE" ]]; then
-            mv "$NEW_FILE" "feeds/${SLUG}.xml"
-            echo "  Done: feeds/${SLUG}.xml"
-        else
-            echo "  [warn] process_feed.py failed or produced empty output for @${SLUG} — keeping existing feed."
-            rm -f "$NEW_FILE"
-        fi
+        # The script reads from stdin (< "$TMP_FILE") and writes to stdout
+        # (> "feeds/${SLUG}.xml"), keeping the original .tmp until success.
+        python3 process_feed.py "$SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
+            < "$TMP_FILE" > "feeds/${SLUG}.xml"
+
         rm -f "$TMP_FILE"
+        echo "  Done: feeds/${SLUG}.xml"
     else
         echo "  [warn] Empty response for @${SLUG}, skipping."
         rm -f "$TMP_FILE"
