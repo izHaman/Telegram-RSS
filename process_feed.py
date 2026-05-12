@@ -360,19 +360,25 @@ def _process_item(body: str, slug: str, raw_base: str,
         # last-resort fallback.  The reader may not load it inside Iran, but
         # the text content of the post is always preserved.
 
-    # ── Inject bilingual media link for video / audio / GIF posts ────────────
+    # ── Inject media link for video / audio / GIF posts ──────────────────────
     # Static images (jpg, jpeg, png, webp) do NOT get a link — the image itself
-    # is already visible in the feed card.
-    # GIF is animated, so it gets a link just like video/audio.
-    # The repl is passed as a callable to re.sub() to prevent backreference
-    # interpretation of special characters in the URL (e.g. \1, &, \g<>).
+    # is already visible in the feed card.  GIF is animated → gets a link.
+    #
+    # RSSHub produces two description formats:
+    #   A) <description><![CDATA[...]]></description>   (CDATA-wrapped)
+    #   B) <description><p>...</p></description>         (plain HTML, no CDATA)
+    # The regex below handles BOTH by matching <description> then optionally
+    # the CDATA opener, inserting the link text right after whichever is found.
+    # repl is a lambda (not an rf-string) to prevent regex engine from
+    # misinterpreting backslashes or & characters inside the URL.
     ANIMATED_EXTS = VIDEO_EXTS | AUDIO_EXTS | {"gif"}
     if best_url and best_ext and best_ext in ANIMATED_EXTS:
-        link = _make_media_link(best_url, best_ext)
+        _link = _make_media_link(best_url, best_ext)
         body = re.sub(
-            r"(<description>\s*<!\[CDATA\[)",
-            lambda m: m.group(1) + link,
+            r"(<description>)(\s*(?:<!\[CDATA\[)?)",
+            lambda m: m.group(1) + m.group(2) + _link,
             body,
+            count=1,
         )
 
     # ── Build <enclosure> + <media:content> ──────────────────────────────────
@@ -387,14 +393,15 @@ def _process_item(body: str, slug: str, raw_base: str,
             f"{_enclosure(placeholder, 'jpg')}\n"
             f"{_media_content(placeholder, 'jpg')}"
         )
-        _ph = placeholder  # capture for lambda closure
+        _ph = placeholder
         body = re.sub(
-            r"(<description>\s*<!\[CDATA\[)",
-            lambda m: m.group(1) + (
+            r"(<description>)(\s*(?:<!\[CDATA\[)?)",
+            lambda m: m.group(1) + m.group(2) + (
                 f'<img src="{_ph}" '
                 f'style="width:100%;border-radius:8px;margin-bottom:10px" /><br/>'
             ),
             body,
+            count=1,
         )
 
     return body.rstrip() + "\n" + suffix + "\n"
