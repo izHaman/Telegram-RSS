@@ -104,9 +104,9 @@ _DL_HEADERS = {"User-Agent": "Mozilla/5.0", "Referer": "https://t.me/"}
 #   A) Direct file URLs ending with a known media extension
 #   B) Bare telesco.pe video links (no extension in path, always video)
 _URL_RE = re.compile(
-    r"https://[^\s\"<]+"
+    r"https://(?:(?!&quot;)[^\s\"<])+"
     r"(?:\.(?:mp4|mkv|mov|webm|mp3|m4a|ogg|jpg|jpeg|png|gif|webp))"
-    r"|https://[^\s\"<]*telesco\.pe/file/[^\"<\s?]*",
+    r"|https://(?:(?!&quot;)[^\s\"<])*telesco\.pe/file/(?:(?!&quot;)[^\s\"<?])*",
     re.IGNORECASE,
 )
 
@@ -312,7 +312,7 @@ def _process_item(body: str, slug: str, raw_base: str,
         seen.add(raw_url)
 
         # Normalise: strip query string tokens before extension detection / hashing
-        clean = raw_url.split("?")[0].replace("&amp;", "&")
+        clean = raw_url.split("?")[0].replace("&amp;", "&").replace("&quot;", "").replace("&#34;", "")
 
         # Infer extension — telesco.pe bare links are always video (mp4)
         ext_m = re.search(r"\.([a-z0-9]{2,4})$", clean, re.IGNORECASE)
