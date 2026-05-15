@@ -100,4 +100,5 @@ git config --global user.name  "github-actions[bot]"
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
 git add .
-git diff --cached --quiet || (git commit -m "sync: feeds and media cache update" && git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git")
+git diff --cached --quiet || (git commit -m "sync: feeds and media cache update" && git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" 2>&1)
+echo "Git push exit code: $?"
