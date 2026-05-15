@@ -197,5 +197,5 @@ git add .
 
 # `&& git push` is intentional: if there are no changes (all channels returned
 # empty XML or no new media was downloaded), `git commit` exits non-zero and
-# the push is skipped, avoiding empty commits in the history.
-git diff --quiet && git diff --cached --quiet || (git commit -m "sync: feeds and media cache update" && git push)
+# the push is skipped, avoiding empty commits in the history
+git diff --cached --quiet || (git commit -m "sync: feeds and media cache update" && git push)
