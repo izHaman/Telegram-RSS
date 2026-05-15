@@ -312,8 +312,8 @@ def _process_item(body: str, slug: str, raw_base: str,
                 continue
             seen.add(raw_url)
                     
-        # Normalise: strip query string tokens before extension detection / hashing
-        clean = raw_url.split("?")[0].replace("&amp;", "&").replace("&quot;", "").replace("&#34;", "")
+            # Normalise: strip query string tokens before extension detection / hashing
+            clean = raw_url.split("?")[0].replace("&amp;", "&").replace("&quot;", "").replace("&#34;", "")
 
         # Infer extension — telesco.pe bare links are always video (mp4)
         ext_m = re.search(r"\.([a-z0-9]{2,4})$", clean, re.IGNORECASE)
