@@ -35,6 +35,7 @@ jobs:
           TELEGRAM_API_ID:   ${{ secrets.TELEGRAM_API_ID }}
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           TELEGRAM_SESSION:  ${{ secrets.TELEGRAM_SESSION }}
+          GITHUB_TOKEN:      ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x Fetch-feeds.sh
           ./Fetch-feeds.sh
