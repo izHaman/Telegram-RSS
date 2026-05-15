@@ -96,6 +96,28 @@ mkdir -p feeds/media/default_img   # ensure directory exists before curl writes 
 
 echo "Step 2: Fetching RSSHub chunk (index ${INDEX})..."
 
+
+# ── Priority channel: always fetch regardless of chunk ─────────────────────
+PRIORITY_SLUG="STCdownload"
+TMP_FILE="feeds/${PRIORITY_SLUG}.xml.tmp"
+
+for INSTANCE in "${RSSHUB_INSTANCES[@]}"; do
+    curl -L -s -o "$TMP_FILE" \
+         -A "Mozilla/5.0" \
+         "${INSTANCE}/telegram/channel/${PRIORITY_SLUG}?include_video=1" \
+         --connect-timeout 15 \
+         --max-time 60
+    grep -qiE "(mp4|video|telesco\.pe)" "$TMP_FILE" && break
+done
+
+if [[ -s "$TMP_FILE" ]]; then
+    python3 process_feed.py "$PRIORITY_SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
+        < "$TMP_FILE" > "feeds/${PRIORITY_SLUG}.xml"
+    rm -f "$TMP_FILE"
+    echo "  Done (priority): feeds/${PRIORITY_SLUG}.xml"
+fi
+
+
 for (( i=0; i<CHUNK_SIZE; i++ )); do
     # Modulo arithmetic wraps the cursor around the channel list, so runs 0→2→4
     # cycle through all 12 channels without index-out-of-bounds errors.
