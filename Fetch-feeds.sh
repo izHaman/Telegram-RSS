@@ -91,9 +91,9 @@ NEXT_INDEX=$(( (INDEX + CHUNK_SIZE) % TOTAL ))
 echo "{\"index\": ${NEXT_INDEX}}" > state.json
 
 # ── Prune stale media files ───────────────────────────────────────────────────
-find feeds/media -maxdepth 1 -type f -mmin +2880 | while read -r f; do
+while IFS= read -r f; do
     git ls-files --error-unmatch "$f" 2>/dev/null || rm -f "$f"
-done
+done < <(find feeds/media -maxdepth 1 -type f -mmin +2880)
 
 # ── Commit and push ───────────────────────────────────────────────────────────
 git config --global user.name  "github-actions[bot]"
