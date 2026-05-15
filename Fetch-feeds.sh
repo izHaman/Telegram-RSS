@@ -42,21 +42,23 @@ echo "Step 2: Fetching RSSHub chunk (index ${INDEX})..."
 PRIORITY_SLUG="STCdownload"
 TMP_FILE="feeds/${PRIORITY_SLUG}.xml.tmp"
 
+set +e
 for INSTANCE in "${RSSHUB_INSTANCES[@]}"; do
     curl -L -s -o "$TMP_FILE" \
          -A "Mozilla/5.0" \
          "${INSTANCE}/telegram/channel/${PRIORITY_SLUG}?include_video=1" \
          --connect-timeout 15 \
          --max-time 60
-    grep -qiE "(mp4|mp3|video|audio|telesco\.pe)" "$TMP_FILE" && break || true
+    grep -qiE "(mp4|mp3|video|audio|telesco\.pe)" "$TMP_FILE" && break
 done
 
 if [[ -s "$TMP_FILE" ]]; then
     python3 process_feed.py "$PRIORITY_SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
-        < "$TMP_FILE" > "feeds/${PRIORITY_SLUG}.xml" || true
+        < "$TMP_FILE" > "feeds/${PRIORITY_SLUG}.xml"
     rm -f "$TMP_FILE"
     echo "  Done (priority): feeds/${PRIORITY_SLUG}.xml"
 fi
+set -e
 
 # ── Chunk loop ───────────────────────────────────────────────────────────────
 for (( i=0; i<CHUNK_SIZE; i++ )); do
