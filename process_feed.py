@@ -307,10 +307,10 @@ def _process_item(body: str, slug: str, raw_base: str,
     seen = set()   # de-duplicate URLs (RSSHub occasionally repeats them)
 
     for raw_url in _URL_RE.findall(body):
-    raw_url = raw_url.replace("&quot;", "").replace("&#34;", "")
-    if raw_url in seen:
-        continue
-    seen.add(raw_url)
+            raw_url = raw_url.replace("&quot;", "").replace("&#34;", "")
+            if raw_url in seen:
+                continue
+            seen.add(raw_url)
                     
         # Normalise: strip query string tokens before extension detection / hashing
         clean = raw_url.split("?")[0].replace("&amp;", "&").replace("&quot;", "").replace("&#34;", "")
