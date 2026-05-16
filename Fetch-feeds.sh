@@ -17,9 +17,29 @@ PLACEHOLDER_URL="${RAW_BASE_URL}/feeds/media/default_img/text_placeholder.jpg"
 [[ ! -f "state.json" ]] && echo '{"index": 0}' > state.json
 INDEX=$(python3 -c "import json; print(json.load(open('state.json'))['index'])")
 
+# ---------------------------------------------------------------------------
+# Ensure folders exist
+# ---------------------------------------------------------------------------
+mkdir -p feeds
+mkdir -p feeds/media/default_img
+
+# ---------------------------------------------------------------------------
+# Cleanup orphan tmp files
+# ---------------------------------------------------------------------------
+find feeds -type f -name "*.tmp" -delete || true
+
 # ── Step 1: Telegram MTProto Image Bridge ────────────────────────────────────
 echo "Step 1: Running Telegram Media Bridge..."
+
+set +e
 python3 bridge.py
+BRIDGE_EXIT=$?
+set -e
+
+if [[ $BRIDGE_EXIT -ne 0 ]]; then
+    echo "[warn] bridge.py exited with code ${BRIDGE_EXIT}"
+    echo "[warn] Continuing workflow anyway..."
+fi
 
 # ── Step 2: Fetch RSS feeds from RSSHub ──────────────────────────────────────
 RSSHUB_INSTANCES=(
@@ -28,13 +48,23 @@ RSSHUB_INSTANCES=(
     "https://rsshub.app"
 )
 
-CHANNELS=("mamlekate" "ircfspace" "vahidonline" "iranintltv" "drtel" "hatricktv"
-          "raptv" "jadivarlog" "digitechirchannel" "STCdownload"
-          "khateraaat" "dw_farsi")
+CHANNELS=(
+    "mamlekate"
+    "ircfspace"
+    "vahidonline"
+    "iranintltv"
+    "drtel"
+    "hatricktv"
+    "raptv"
+    "jadivarlog"
+    "digitechirchannel"
+    "STCdownload"
+    "khateraaat"
+    "dw_farsi"
+)
+
 TOTAL=${#CHANNELS[@]}
 CHUNK_SIZE=4
-
-mkdir -p feeds/media/default_img
 
 echo "Step 2: Fetching RSSHub chunk (index ${INDEX})..."
 
@@ -43,47 +73,115 @@ PRIORITY_SLUG="STCdownload"
 TMP_FILE="feeds/${PRIORITY_SLUG}.xml.tmp"
 
 set +e
+
 for INSTANCE in "${RSSHUB_INSTANCES[@]}"; do
-    curl -L -s -o "$TMP_FILE" \
+    echo "  Trying priority feed from: ${INSTANCE}"
+
+    curl -L -s \
+         --retry 3 \
+         --retry-delay 2 \
+         --retry-all-errors \
+         --connect-timeout 20 \
+         --max-time 90 \
          -A "Mozilla/5.0" \
-         "${INSTANCE}/telegram/channel/${PRIORITY_SLUG}?include_video=1" \
-         --connect-timeout 15 \
-         --max-time 60
-    grep -qiE "(mp4|mp3|video|audio|telesco\.pe)" "$TMP_FILE" && break
+         -o "$TMP_FILE" \
+         "${INSTANCE}/telegram/channel/${PRIORITY_SLUG}?include_video=1"
+
+    if [[ ! -s "$TMP_FILE" ]]; then
+        echo "    Empty response."
+        continue
+    fi
+
+    if grep -qiE "(<rss|<feed|mp4|mp3|video|audio|telesco\.pe)" "$TMP_FILE"; then
+        echo "    Valid feed detected."
+        break
+    fi
+
+    echo "    Invalid response."
 done
 
 if [[ -s "$TMP_FILE" ]]; then
-    python3 process_feed.py "$PRIORITY_SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
-        < "$TMP_FILE" > "feeds/${PRIORITY_SLUG}.xml"
-    rm -f "$TMP_FILE"
+    python3 process_feed.py \
+        "$PRIORITY_SLUG" \
+        "$RAW_BASE_URL" \
+        "$PLACEHOLDER_URL" \
+        < "$TMP_FILE" \
+        > "feeds/${PRIORITY_SLUG}.xml"
+
     echo "  Done (priority): feeds/${PRIORITY_SLUG}.xml"
 fi
+
+rm -f "$TMP_FILE"
+
 set -e
 
 # ── Chunk loop ───────────────────────────────────────────────────────────────
 for (( i=0; i<CHUNK_SIZE; i++ )); do
+
     CURR_IDX=$(( (INDEX + i) % TOTAL ))
     SLUG="${CHANNELS[$CURR_IDX]}"
+
+    # Skip duplicate priority channel
+    [[ "$SLUG" == "$PRIORITY_SLUG" ]] && continue
+
     TMP_FILE="feeds/${SLUG}.xml.tmp"
 
+    echo "  Fetching @${SLUG}..."
+
+    SUCCESS=0
+
     for INSTANCE in "${RSSHUB_INSTANCES[@]}"; do
-        curl -L -s -o "$TMP_FILE" \
+
+        echo "    Trying instance: ${INSTANCE}"
+
+        curl -L -s \
+             --retry 3 \
+             --retry-delay 2 \
+             --retry-all-errors \
+             --connect-timeout 20 \
+             --max-time 90 \
              -A "Mozilla/5.0" \
-             "${INSTANCE}/telegram/channel/${SLUG}?include_video=1" \
-             --connect-timeout 15 \
-             --max-time 60
-        grep -qiE "(mp4|mp3|video|audio|telesco\.pe)" "$TMP_FILE" && break || true
+             -o "$TMP_FILE" \
+             "${INSTANCE}/telegram/channel/${SLUG}?include_video=1"
+
+        # Empty response
+        [[ ! -s "$TMP_FILE" ]] && continue
+
+        # Validate actual feed content
+        if grep -qiE "(<rss|<feed|mp4|mp3|video|audio|telesco\.pe)" "$TMP_FILE"; then
+            SUCCESS=1
+            break
+        fi
     done
 
-    if [[ -s "$TMP_FILE" ]]; then
-        python3 process_feed.py "$SLUG" "$RAW_BASE_URL" "$PLACEHOLDER_URL" \
-            < "$TMP_FILE" > "feeds/${SLUG}.xml" || true
-        rm -f "$TMP_FILE"
-        echo "  Done: feeds/${SLUG}.xml"
+    if [[ $SUCCESS -eq 1 ]]; then
+
+        set +e
+
+        python3 process_feed.py \
+            "$SLUG" \
+            "$RAW_BASE_URL" \
+            "$PLACEHOLDER_URL" \
+            < "$TMP_FILE" \
+            > "feeds/${SLUG}.xml"
+
+        PROCESS_EXIT=$?
+
+        set -e
+
+        if [[ $PROCESS_EXIT -eq 0 ]]; then
+            echo "  Done: feeds/${SLUG}.xml"
+        else
+            echo "  [warn] process_feed.py failed for @${SLUG}"
+            rm -f "feeds/${SLUG}.xml"
+        fi
+
     else
-        echo "  [warn] Empty response for @${SLUG}, skipping."
-        rm -f "$TMP_FILE"
+        echo "  [warn] Invalid/empty response for @${SLUG}"
     fi
+
+    rm -f "$TMP_FILE"
+
 done
 
 # ── Advance cursor ────────────────────────────────────────────────────────────
@@ -91,14 +189,41 @@ NEXT_INDEX=$(( (INDEX + CHUNK_SIZE) % TOTAL ))
 echo "{\"index\": ${NEXT_INDEX}}" > state.json
 
 # ── Prune stale media files ───────────────────────────────────────────────────
-while IFS= read -r f; do
-    git ls-files --error-unmatch "$f" 2>/dev/null || rm -f "$f"
-done < <(find feeds/media -maxdepth 1 -type f -mmin +2880)
+echo "Step 3: Pruning stale media..."
 
-# ── Commit and push ───────────────────────────────────────────────────────────
+while IFS= read -r f; do
+
+    git ls-files --error-unmatch "$f" >/dev/null 2>&1 || {
+        echo "  Removing stale file: $f"
+        rm -f "$f"
+    }
+
+done < <(
+    find feeds/media \
+        -maxdepth 1 \
+        -type f \
+        -mmin +2880
+)
+
+# ── Git config ───────────────────────────────────────────────────────────────
 git config --global user.name  "github-actions[bot]"
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+# ── Commit and push ───────────────────────────────────────────────────────────
+echo "Step 4: Commit & push..."
+
 git add .
-git diff --cached --quiet || (git commit -m "sync: feeds and media cache update" && git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" 2>&1)
-echo "Git push exit code: $?"
+
+if git diff --cached --quiet; then
+    echo "No changes detected."
+else
+
+    git commit -m "sync: feeds and media cache update"
+
+    git push \
+        "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+        2>&1 || echo "[warn] git push failed"
+
+fi
+
+echo "Workflow completed."
