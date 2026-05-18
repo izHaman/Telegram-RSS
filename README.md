@@ -130,6 +130,9 @@ If all three fail, the original CDN URL is preserved as a last-resort fallback.
 - Modulo arithmetic wraps the cursor safely — no index-out-of-bounds errors.
 - Balances freshness against GitHub Actions usage and RSSHub rate limits.
 
+### ⭐ Priority Channels
+You can define a dedicated channel that is fetched on every run, independent of the rotation cycle. Ideal for channels that require continuous updates.
+
 ### 🖼️ Image Optimisation
 - Downloaded JPEG/PNG images are re-encoded at **70% JPEG quality** using Pillow.
 - Typically reduces file size by **50–60%** with no visible artefact on mobile screens.
