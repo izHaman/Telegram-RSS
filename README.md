@@ -415,6 +415,12 @@ You can also adjust how many channels are refreshed per run:
 CHUNK_SIZE=4   # increase for faster refresh, at the cost of more Actions minutes
 ```
 
+To set your priority channel, update the PRIORITY_SLUG variable in Fetch-feeds.sh.
+```bash
+PRIORITY_SLUG="STCdownload" # will be fetched on every run independent of the rotation cycle
+```
+
+
 Commit and push your changes.
 
 ---
